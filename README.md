@@ -109,9 +109,11 @@ clones_UCA <- getTrees_and_UCA(clones = clones, dir = NULL,
                                rm_temp = FALSE, quiet = 1, nproc = 1)
 ```
 
-The output of this function is your clones object with a new column `UCA` that contains the inferred UCA. This can be found in the data frame containing sequence information for each clone. 
+The output of this function is your clones object with a new column `UCA` that contains the inferred UCA. This can be found in the data frame containing sequence information for each clone, or in the germline node of the tree. 
 
 ```r
 row_num <- # some number
 View(clones$data[[row_num]]@data$UCA[1])
+germline_node <- ape::getMRCA(clones$trees[[row_num]], clones$trees[[row_num]]$tip.label)
+clones$trees[[row_num]]$nodes[[germline_node]]$sequence
 ```
