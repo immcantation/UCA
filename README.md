@@ -76,8 +76,10 @@ To do this, process your BCR data up to the formatClones step of building B cell
 
 ```r
 library(dowser)
-# format the data into clones
-data <- formatClones(data)
+library(dplyr)
+data("ExampleAirr")
+ExampleAirr <- filter(ExampleAirr, clone_id %in% c(3128, 3100))
+clones <- formatClones(ExampleAirr)
 ```
 ## Inferring the UCA
 
