@@ -32,9 +32,11 @@ parser.add_argument('--directory', required=True, help='Directory where the clon
 parser.add_argument('--max_iters', type=int, required=True, help='Max number of iterations to run')
 parser.add_argument('--nproc', type=int, required=True, help='Number of processors to use')
 parser.add_argument('--id', required=True, help='The name of the folder that is created to store the data')
-parser.add_argument('--model_folder', required=True, help='The folder where the OLGA model information is stored')
 parser.add_argument('--quiet', type=int, default=0, help='Whether to print out the progress/messages of the script')
-
+parser.add_argument('--model_params', required=True, help='The file path to the OLGA model file model_params.txt')
+parser.add_argument('--model_marginals', required=True, help='The file path to the OLGA model file model_marginals.txt')
+parser.add_argument('--v_anchors', required=True, help='The file path to the OLGA model file V_gene_CDR3_anchors.csv')
+parser.add_argument('--j_anchors', required=True, help='The file path to the OLGA model file J_gene_CDR3_anchors.csv')
 # Parse the arguments
 args = parser.parse_args()
 
@@ -206,10 +208,10 @@ def get_updated_germline(starting_germline, starting_cdr3, igphyml_df, pgen_mode
 
 # Define the files for loading in generative model/data
 # TODO: make these command line arguments? Or should we just include it with the package?
-params_file_name = args.model_folder + '/model_params.txt'
-marginals_file_name = args.model_folder + '/model_marginals.txt'
-V_anchor_pos_file = args.model_folder + '/V_gene_CDR3_anchors.csv'
-J_anchor_pos_file = args.model_folder + '/J_gene_CDR3_anchors.csv'
+params_file_name = args.model_params
+marginals_file_name = args.model_marginals
+V_anchor_pos_file = args.v_anchors
+J_anchor_pos_file = args.j_anchors
 
 # Load data
 genomic_data = load_model.GenomicDataVDJ()
