@@ -105,7 +105,7 @@ clones_UCA <- getTrees_and_UCA(clones = clones, dir = NULL,
                                model_folder = ".../human_B_heavy",
                                uca_script = ".../get_UCA.py",
                                max_iters = 10, id = "sample", optimize = "lr", 
-                               motifs = "FCH", hotness = "e,e,e,e,e,e, omega = NULL, 
+                               motifs = "FCH", hotness = "e,e,e,e,e,e", omega = NULL, 
                                rm_temp = FALSE, quiet = 1, nproc = 1)
 ```
 
