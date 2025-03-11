@@ -86,7 +86,7 @@ clones <- formatClones(ExampleAirr)
 You should now have a clone object with at least one clone. You can now infer the UCA. To do so use the `getTrees_and_UCA` function in R. This function is dependent on a few things. A brief explanation will be included in the example below. For further detail into the function inputs and parameters, run `?getTreesAndUCA`.  
 
 ```r
-clones_UCA <- getTrees_and_UCA(clones = clones, build = "igphyml",
+clones_UCA <- getTreesAndUCA(clones = clones, build = "igphyml",
                                exec = ".../igphyml/src/igphyml",
                                model_params = ".../model_params.txt",
                                model_marginals = ".../model_marginals.txt",
@@ -100,7 +100,7 @@ The output of this function is your clones object with a new column `UCA` that c
 
 ```r
 row_num <- # some number
-clones$UCA[[row_num]]
-germline_node <- ape::getMRCA(clones$trees[[row_num]], clones$trees[[row_num]]$tip.label)
-clones$trees[[row_num]]$nodes[[germline_node]]$sequence
+# this will get the results of row 1
+germline_node <- ape::getMRCA(clones$trees[[1]], clones$trees[[1]]$tip.label)
+clones$trees[[1]]$nodes[[germline_node]]$sequence
 ```
