@@ -87,20 +87,21 @@ You should now have a clone object with at least one clone. You can now infer th
 
 ```r
 clones_UCA <- getTreesAndUCA(clones = clones, build = "igphyml",
-                               exec = ".../igphyml/src/igphyml",
-                               model_params = ".../model_params.txt",
-                               model_marginals = ".../model_marginals.txt",
-                               v_anchors = ".../v_anchors.csv",
-                               j_anchors = ".../j_anchors.csv", 
-                               uca_script = ".../get_UCA.py",
+                               exec = "igphyml/src/igphyml",
+                               model_folder = "OLGA/olga/default_models/human_B_heavy",
+                               uca_script = "get_UCA.py",
                                nproc = 1)
 ```
 
 The output of this function is your clones object with a new column `UCA` that contains the inferred UCA. This can be found in the data frame containing sequence information for each clone, or in the germline node of the tree. 
 
 ```r
-row_num <- # some number
 # this will get the results of row 1
+
+# grab it from the clones object 
+clones_UCA$UCA[1]
+
+# grab it from the tree object
 germline_node <- ape::getMRCA(clones$trees[[1]], clones$trees[[1]]$tip.label)
 clones$trees[[1]]$nodes[[germline_node]]$sequence
 ```

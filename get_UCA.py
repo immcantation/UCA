@@ -27,16 +27,19 @@ import random
 
 # Define the argument parser
 parser = argparse.ArgumentParser(description='Process UCA arguments.')
-parser.add_argument('--clone_ids', required=True, help='Clone IDs to get UCA for')
+parser.add_argument('--clone_ids', required=True, help='A comma seperated string of the clone iDs to get UCA for')
 parser.add_argument('--directory', required=True, help='Directory where the clone data is stored')
 parser.add_argument('--max_iters', type=int, required=True, help='Max number of iterations to run')
 parser.add_argument('--nproc', type=int, required=True, help='Number of processors to use')
 parser.add_argument('--id', required=True, help='The name of the folder that is created to store the data')
+parser.add_argument('--model_folder', required=True, help='The file path to the OLGA model files')
 parser.add_argument('--quiet', type=int, default=0, help='Whether to print out the progress/messages of the script')
-parser.add_argument('--model_params', required=True, help='The file path to the OLGA model file model_params.txt')
-parser.add_argument('--model_marginals', required=True, help='The file path to the OLGA model file model_marginals.txt')
-parser.add_argument('--v_anchors', required=True, help='The file path to the OLGA model file V_gene_CDR3_anchors.csv')
-parser.add_argument('--j_anchors', required=True, help='The file path to the OLGA model file J_gene_CDR3_anchors.csv')
+parser.add_argument("--starting_germlines", required=True, help="A comma seperated string of the file paths to the starting germline. "
+"If you have runn getTreesAndUCA this file will be named 'olga_testing_germline.txt'")
+parser.add_argument("--starting_junctions", required=True, help="A comma seperated string of the file paths to the starting junction. "
+"If you have runn getTreesAndUCA this file will be named 'olga_testing_germline_cdr3.txt'")
+parser.add_argument("--tree_tables", required=True, help="A comma seperated string of the file paths to the tree tables associated with these clones. "
+"If you have runn getTreesAndUCA this file will end in '_pars_hlp_rootprobs.txt'")
 # Parse the arguments
 args = parser.parse_args()
 
@@ -199,10 +202,10 @@ def get_updated_germline(starting_germline, starting_cdr3, igphyml_df, pgen_mode
 
 # Define the files for loading in generative model/data
 # TODO: make these command line arguments? Or should we just include it with the package?
-params_file_name = args.model_params
-marginals_file_name = args.model_marginals
-V_anchor_pos_file = args.v_anchors
-J_anchor_pos_file = args.j_anchors
+params_file_name = args.model_folder + '/model_params.txt'
+marginals_file_name = args.model_folder + '/model_marginals.txt'
+V_anchor_pos_file = args.model_folder + '/V_gene_CDR3_anchors.csv'
+J_anchor_pos_file = args.model_folder + '/J_gene_CDR3_anchors.csv'
 
 # Load data
 genomic_data = load_model.GenomicDataVDJ()
@@ -214,32 +217,40 @@ generative_model.load_and_process_igor_model(marginals_file_name)
 #Process model/data for pgen computation by instantiating GenerationProbabilityVDJ
 pgen_model = pgen.GenerationProbabilityVDJ(generative_model, genomic_data)
 
-for clone_id in args.clone_ids.split(','):
-    base_string = args.directory + "/" + args.id + "_" + clone_id
+clone_ids_list = args.clone_ids.split(',')
+starting_germlines_list = args.starting_germlines.split(',')
+starting_junctions_list = args.starting_junctions.split(',')
+tree_table_list = args.tree_tables.split(',')
+
+index_table = pd.DataFrame({
+    'clone_ids': clone_ids_list,
+    'starting_germline': starting_germlines_list,
+    'starting_junction': starting_junctions_list,
+    'tree_table': tree_table_list
+})
+
+for index, row in index_table.iterrows():
+    clone_number = row['clone_ids']
+    base_string = args.directory + "/" + args.id + "_" + clone_number
     if args.quiet > 0:
-        print("\nRunning on clone", clone_id, "with saved data in", base_string)
+        print("\nRunning on clone", clone_number, "with saved data in", base_string)
 
     # get the input data from the saved location 
-    clone_number = clone_id
-    df_string= "/sample/sample_lineages_sample_pars_hlp_rootprobs.txt"
-    table_path = base_string + df_string
+    table_path = row['tree_table']    
     igphyml_df = pd.read_csv(table_path, sep = "\t", header = None)
     # the other columns here will be useful later but not now
     igphyml_df.columns = ["site", "codon", "partial_likelihood", "nope", "nada", "no", "equilibrium"]
     igphyml_df['value'] = igphyml_df['partial_likelihood'] * igphyml_df['equilibrium']
 
-    germline_string = base_string + "/olga_testing_germline.txt"
-    cdr3_string = base_string + "/olga_testing_germline_cdr3.txt"
+    germline_string = row['starting_germline']
+    cdr3_string = row['starting_junction']
 
-    #junction_length_string = base_string + "/olga_testing_germline_junc_len.txt"
     with open(germline_string, "r") as f:
         starting_germline = f.read().strip()
 
     with open(cdr3_string, "r") as f:
         starting_cdr3 = f.read().strip()
 
-    #with open(junction_length_string, "r") as f:
-    #    junction_length = f.read().strip()
     junction_length = len(starting_cdr3)
 
     # check for Ns in the V and J gene 
