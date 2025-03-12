@@ -66,7 +66,16 @@ pip install numpy pandas biopython olga
 
 ## Installing IgPhyML
 
-In this process, tree base statistics will be used to infer the UCA. As such this process *involves* constructing trees. Currently the only tree building method supported is IgPhyML. Please make sure that you have installed IgPhyML. [Here are instructions that outline how to install IgPhyML](https://igphyml.readthedocs.io/en/latest/install.html). If you have successfully installed IgPhyML you should find a executable file in the 'src' folder called 'igphyml'. 
+ These new functions require the latest development version of IgPhyML to be installed from source code. [Here are instructions that outline how to compile IgPhyML](https://igphyml.readthedocs.io/en/latest/install.html). Once you've successfully installed IgPhyML you should find a executable file in the 'src' folder called 'igphyml'. You can test if you've done it correctly by running this line:
+
+```bash
+# run in terminal from within the igphyml directory:
+
+./src/igphyml -version
+
+#COMMAND: ./src/igphyml -version 
+#IgPhyML 2.0.0 092223
+```
 
 ## Clone Olga's Github
 
@@ -91,7 +100,7 @@ clones <- formatClones(ExampleAirr)
 ```
 ## Inferring the UCA
 
-You should now have a clone object with at least one clone. You can now infer the UCA. To do so use the `getTrees_and_UCA` function in R. This function is dependent on a few things. A brief explanation will be included in the example below. For further detail into the function inputs and parameters, run `?getTreesAndUCA`.  
+You should now have a clone object with at least one clone. You can now infer the UCA. To do so use the `getTrees_and_UCA` function in R. This function is dependent on a few things. A brief explanation will be included in the example below. For further detail into the function inputs and parameters, run `?getTreesAndUCA`.  This function may take a few minutes to complete, but you can speed it up by only including a few clones or increasing the `nproc` to the number of cores you'd like to use (maximum 61).
 
 ```r
 clones_UCA <- getTreesAndUCA(clones = clones, build = "igphyml",
