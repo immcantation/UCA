@@ -1,22 +1,6 @@
 import argparse
 import subprocess
 import sys
-
-#def install_and_import(package):
-#    try:
-#        __import__(package)
-#    except ImportError:
-#        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-#    finally:
-#        globals()[package] = __import__(package)
-
-#install_and_import('numpy')
-#install_and_import('pandas')
-#install_and_import('Bio.Seq')
-#install_and_import('multiprocessing')
-#install_and_import('random')
-#install_and_import('olga')
-
 from Bio.Seq import Seq
 from multiprocessing import Pool
 import numpy as np
@@ -26,16 +10,22 @@ import pandas as pd
 import random
 import os
 
-def find_all_indices(larger_string, smaller_string):
-    indices = []
-    start = 0
-    while True:
-        start = larger_string.find(smaller_string, start)
-        if start == -1:
-            break
-        indices.append(start)
-        start += 1  # Move past the last found index
-    return indices
+#def find_all_indices(larger_string, smaller_string):
+#    indices = []
+#    start = 0
+#    while True:
+#        start = larger_string.find(smaller_string, start)
+#        if start == -1:
+#            break
+#        indices.append(start)
+#        start += 1  # Move past the last found index
+#    return indices
+
+def read_starting_and_ending_points(file_path):
+    with open(file_path, 'r') as file:
+        content = file.read().strip()
+        starting_point, ending_point = map(int, content.split())
+    return starting_point, ending_point
 
 # now use the mcmc_codon_order to change the codons in the germline and get the pgen and new tree likelihood
 def generate_codon_list(codons, starting_germline, starting_point, end_point, cdr3_only):
@@ -103,12 +93,12 @@ def process_option(option, filtered_df, codon, current_germline, starting_point,
 def process_option_wrapper(args):
     return process_option(*args)
 
-def get_updated_germline(starting_germline, starting_cdr3, igphyml_df, pgen_model, junction_length, cdr3_only=True, max_iter=100, nproc = 1):
+def get_updated_germline(starting_germline, starting_cdr3, igphyml_df, pgen_model, starting_point, ending_point, cdr3_only=True, max_iter=100, nproc = 1):
     current_codons = [starting_germline[i:i+3] for i in range(0, len(starting_germline), 3)]
     current_germline = starting_germline
     # get the inital position of the CDR3
-    starting_point = find_all_indices(starting_germline, starting_cdr3)[0]
-    ending_point = starting_point + int(junction_length)
+#    starting_point = find_all_indices(starting_germline, starting_cdr3)[0]
+#    ending_point = starting_point + int(junction_length)
     current_lhoods = get_new_lhood(current_germline, starting_point, ending_point, pgen_model, igphyml_df)
 
     # remove the nonviable site options for the starting and ending sites
@@ -187,6 +177,8 @@ if __name__ == '__main__':
     "If you have runn getTreesAndUCA this file will be named 'olga_testing_germline.txt'")
     parser.add_argument("--starting_junctions", required=True, help="A comma seperated string of the file paths to the starting junction. "
     "If you have runn getTreesAndUCA this file will be named 'olga_testing_germline_cdr3.txt'")
+    parser.add_argument("--junction_locations", required=True, help="A comma seperated string of the file paths to the file containing the starting and endidn site number of the junction. "
+    "If you have runn getTreesAndUCA this file will be named 'olga_junction_positions.txt'")
     parser.add_argument("--tree_tables", required=True, help="A comma seperated string of the file paths to the tree tables associated with these clones. "
     "If you have runn getTreesAndUCA this file will end in '_pars_hlp_rootprobs.txt'")
     # Parse the arguments
@@ -214,12 +206,14 @@ if __name__ == '__main__':
     clone_ids_list = args.clone_ids.split(',')
     starting_germlines_list = args.starting_germlines.split(',')
     starting_junctions_list = args.starting_junctions.split(',')
+    junction_locations_list = args.junction_locations.split(',')
     tree_table_list = args.tree_tables.split(',')
 
     index_table = pd.DataFrame({
         'clone_ids': clone_ids_list,
         'starting_germline': starting_germlines_list,
         'starting_junction': starting_junctions_list,
+        'junction_locations': junction_locations_list,
         'tree_table': tree_table_list
     })
 
@@ -241,6 +235,9 @@ if __name__ == '__main__':
 
         germline_string = row['starting_germline']
         cdr3_string = row['starting_junction']
+        junction_string = row['junction_locations']
+        starting_point, ending_point = read_starting_and_ending_points(junction_string)
+
 
         with open(germline_string, "r") as f:
             starting_germline = f.read().strip()
@@ -248,7 +245,7 @@ if __name__ == '__main__':
         with open(cdr3_string, "r") as f:
             starting_cdr3 = f.read().strip()
 
-        junction_length = len(starting_cdr3)
+        # junction_length = len(starting_cdr3)
 
         # check for Ns in the V and J gene 
         v_gene = starting_germline.split(starting_cdr3)[0]
@@ -282,7 +279,7 @@ if __name__ == '__main__':
         codons = [starting_germline[i:i+3] for i in range(0, len(starting_germline), 3)]
 
         # TODO: if the model (pgen) files aren't included and need to be read in, the argv calls here will need to be updated
-        values = get_updated_germline(starting_germline, starting_cdr3, igphyml_df, pgen_model, junction_length, cdr3_only=True, max_iter=int(args.max_iters), nproc = int(args.nproc))
+        values = get_updated_germline(starting_germline, starting_cdr3, igphyml_df, pgen_model, starting_point, ending_point, cdr3_only=True, max_iter=int(args.max_iters), nproc = int(args.nproc))
 
         new_germline = values[0]
         new_lhoods = values[1]
