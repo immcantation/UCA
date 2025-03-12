@@ -66,7 +66,7 @@ pip install numpy pandas biopython olga
 
 ## Installing IgPhyML
 
- These new functions require the latest development version of IgPhyML to be installed from source code. [Here are instructions that outline how to compile IgPhyML](https://igphyml.readthedocs.io/en/latest/install.html). Once you've successfully installed IgPhyML you should find a executable file in the 'src' folder called 'igphyml'. You can test if you've done it correctly by running this line:
+ These new functions require the latest development version of IgPhyML, which is only supported on Linux and Mac OS X. We're working on other tree building methods, but for now this only works with IgPhyML. [Here are instructions that outline how to compile IgPhyML](https://igphyml.readthedocs.io/en/latest/install.html). Once you've successfully installed IgPhyML you should find a executable file in the 'src' folder called 'igphyml'. You can test if you've done it correctly by running this line:
 
 ```bash
 # run in terminal from within the igphyml directory:
@@ -79,7 +79,7 @@ pip install numpy pandas biopython olga
 
 ## Clone Olga's Github
 
-Part of the UCA inference involves find the likelihood of a given junction sequence. We use `OLGA` to infer this. Please clone their github (you will need this later). 
+We use the program `OLGA` for likelihood calculations. Please clone their github (you will need this later). 
 
 ```bash
 git clone https://github.com/statbiophys/OLGA.git
@@ -87,10 +87,9 @@ git clone https://github.com/statbiophys/OLGA.git
 
 ## Preparing your data
 
-To do this, process your BCR data up to the formatClones step of building B cell phylogenies. To get this point, please follow [this tutorial](https://immcantation.readthedocs.io/en/stable/getting_started/10x_tutorial.html#build-and-visualize-trees). Some variant of the following should be the last step before anything new.
-
+Follow the usual steps of processing your BCR data up to the [formatClones](https://dowser.readthedocs.io/en/latest/vignettes/Building-Trees-Vignette/) step of building B cell phylogenies. 
 ```r
-# Run the remaining code blocks in an R terminal
+# Run this and subsequent  code blocks in an R terminal
 
 library(dowser)
 library(dplyr)
@@ -100,10 +99,10 @@ clones <- formatClones(ExampleAirr)
 ```
 ## Inferring the UCA
 
-You should now have a clone object with at least one clone. You can now infer the UCA. To do so use the `getTrees_and_UCA` function in R. This function is dependent on a few things. A brief explanation will be included in the example below. For further detail into the function inputs and parameters, run `?getTreesAndUCA`.  This function may take a few minutes to complete, but you can speed it up by only including a few clones or increasing the `nproc` to the number of cores you'd like to use (maximum 61).
+You should now have a clone object with 2 clones. To do reconstruct the trees and UCAs, use the `getTreesAndUCAs` function in R. The inputs of this function are 1) the clones object, 2) location of the IgPhyML executible, 3) the script get_UCA.py included with this repository, and 4) the location of Olga's model parameters. Note these models are species and chain specific. We've only tested this on human heavy chains so far. For further detail into the function inputs and parameters, run `?getTreesAndUCAs`.  This function may take a few minutes to complete, but you can speed it up by only including a few clones or increasing the `nproc` to the number of cores you'd like to use (should get faster up to 61 cores).
 
 ```r
-clones_UCA <- getTreesAndUCA(clones = clones, build = "igphyml",
+clones_UCA <- getTreesAndUCAs(clones = clones, build = "igphyml",
                                exec = "igphyml/src/igphyml",
                                model_folder = "OLGA/olga/default_models/human_B_heavy",
                                uca_script = "get_UCA.py",
@@ -119,8 +118,9 @@ clones_UCA$UCA[1]
 
 # Aternatively, use the usual workflow for reconstructing intermediate sequences to get the IMGT-gapped UCA sequence.
 # https://dowser.readthedocs.io/en/latest/vignettes/Sequences-Vignette/
+plotTrees(clones_UCA, node_nums=TRUE)[[1]]
 germline_node <- ape::getMRCA(clones_UCA$trees[[1]], clones_UCA$trees[[1]]$tip.label)
-getNodeSeq(clones_UCA, tree=clones_UCA$trees[[1]], node=germline_node)
 
+getNodeSeq(clones_UCA, tree=clones_UCA$trees[[1]], node=germline_node)
 # GAGGTGCAGCTGGTGGAGTCTGGGGGA...GGCTTGGTACAGCCAGGGCGGTCCCTGAGACTCTCCTGTACAGCTTCTGGATTCACCTTT............GGTGATTATGCTATGAGCTGGTTCCGCCAGGCTCCAGGGAAGGGGCTGGAGTGGGTAGGTTTCATTAGAAGCAAAGCTTATGGTGGGACAACAGAATACGCCGCGTCTGTGAAA...GGCAGATTCACCATCTCAAGAGATGATTCCAAAAGCATCGCCTATCTGCAAATGAACAGCCTGAAAACCGAGGACACAGCCGTGTATTACTGTACTAGAGATCTCGCGGTTATATCCACAGTGGCTGGTACTAACTGGTTCGACCCCTGGGGCCAGGGAACCCTGGTCACCGTCTCCTCAGNN
 ```
