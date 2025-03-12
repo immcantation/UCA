@@ -108,7 +108,7 @@ The output of this function is your clones object with a new column `UCA` that c
 clones_UCA$UCA[1]
 # GAGGTGCAGCTGGTGGAGTCTGGGGGAGGCTTGGTACAGCCAGGGCGGTCCCTGAGACTCTCCTGTACAGCTTCTGGATTCACCTTTGGTGATTATGCTATGAGCTGGTTCCGCCAGGCTCCAGGGAAGGGGCTGGAGTGGGTAGGTTTCATTAGAAGCAAAGCTTATGGTGGGACAACAGAATACGCCGCGTCTGTGAAAGGCAGATTCACCATCTCAAGAGATGATTCCAAAAGCATCGCCTATCTGCAAATGAACAGCCTGAAAACCGAGGACACAGCCGTGTATTACTGTACTAGAGATCTCGCGGTTATATCCACAGTGGCTGGTACTAACTGGTTCGACCCCTGGGGCCAGGGAACCCTGGTCACCGTCTCCTCAGNN
 
-# Use the usual workflow for reconstructing intermediate sequences to get the IMGT-gapped UCA sequence.
+# Aternatively, use the usual workflow for reconstructing intermediate sequences to get the IMGT-gapped UCA sequence.
 # https://dowser.readthedocs.io/en/latest/vignettes/Sequences-Vignette/
 germline_node <- ape::getMRCA(clones_UCA$trees[[1]], clones_UCA$trees[[1]]$tip.label)
 getNodeSeq(clones_UCA, tree=clones_UCA$trees[[1]], node=germline_node)
