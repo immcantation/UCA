@@ -8,6 +8,8 @@ This is a script that will infer the naive sequence of a B cell clone. This proc
 If you have not installed Dowser yet, you will be installing the developer version to test this pipeline. Dowser requires some bioconductor packages and some CRAN packages. As such, it tends to be easier to install the bioconductor packages before installing Dowser.
 
 ```r
+# Run this code in an R terminal
+
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
@@ -29,6 +31,8 @@ if (!require("IRanges", quietly = TRUE)) {
 The internal R functions to run this script are contained in the developer version of Dowser.
 
 ```r
+# Run this code in an R terminal
+
 # Install the devtools package if not already installed
 if (!requireNamespace("devtools", quietly = TRUE)) {
   install.packages("devtools")
@@ -55,6 +59,8 @@ The following Python packages are required to run the script:
 To install the required packages, you can use the following commands:
 
 ```bash
+# run this code in a command terminal, not an R terminal
+
 pip install numpy pandas biopython olga
 ```
 
@@ -75,6 +81,8 @@ git clone https://github.com/statbiophys/OLGA.git
 To do this, process your BCR data up to the formatClones step of building B cell phylogenies. To get this point, please follow [this tutorial](https://immcantation.readthedocs.io/en/stable/getting_started/10x_tutorial.html#build-and-visualize-trees). Some variant of the following should be the last step before anything new.
 
 ```r
+# Run the remaining code blocks in an R terminal
+
 library(dowser)
 library(dplyr)
 data("ExampleAirr")
@@ -96,12 +104,14 @@ clones_UCA <- getTreesAndUCA(clones = clones, build = "igphyml",
 The output of this function is your clones object with a new column `UCA` that contains the inferred UCA. This can be found in the data frame containing sequence information for each clone, or in the germline node of the tree. 
 
 ```r
-# this will get the results of row 1
-
-# grab it from the clones object 
+# Get the UCA of the first clone from the new UCA column in the data object 
 clones_UCA$UCA[1]
+# GAGGTGCAGCTGGTGGAGTCTGGGGGAGGCTTGGTACAGCCAGGGCGGTCCCTGAGACTCTCCTGTACAGCTTCTGGATTCACCTTTGGTGATTATGCTATGAGCTGGTTCCGCCAGGCTCCAGGGAAGGGGCTGGAGTGGGTAGGTTTCATTAGAAGCAAAGCTTATGGTGGGACAACAGAATACGCCGCGTCTGTGAAAGGCAGATTCACCATCTCAAGAGATGATTCCAAAAGCATCGCCTATCTGCAAATGAACAGCCTGAAAACCGAGGACACAGCCGTGTATTACTGTACTAGAGATCTCGCGGTTATATCCACAGTGGCTGGTACTAACTGGTTCGACCCCTGGGGCCAGGGAACCCTGGTCACCGTCTCCTCAGNN
 
-# grab it from the tree object
-germline_node <- ape::getMRCA(clones$trees[[1]], clones$trees[[1]]$tip.label)
-clones$trees[[1]]$nodes[[germline_node]]$sequence
+# Use the usual workflow for reconstructing intermediate sequences to get the IMGT-gapped UCA sequence.
+# https://dowser.readthedocs.io/en/latest/vignettes/Sequences-Vignette/
+germline_node <- ape::getMRCA(clones_UCA$trees[[1]], clones_UCA$trees[[1]]$tip.label)
+getNodeSeq(clones_UCA, tree=clones_UCA$trees[[1]], node=germline_node)
+
+# GAGGTGCAGCTGGTGGAGTCTGGGGGA...GGCTTGGTACAGCCAGGGCGGTCCCTGAGACTCTCCTGTACAGCTTCTGGATTCACCTTT............GGTGATTATGCTATGAGCTGGTTCCGCCAGGCTCCAGGGAAGGGGCTGGAGTGGGTAGGTTTCATTAGAAGCAAAGCTTATGGTGGGACAACAGAATACGCCGCGTCTGTGAAA...GGCAGATTCACCATCTCAAGAGATGATTCCAAAAGCATCGCCTATCTGCAAATGAACAGCCTGAAAACCGAGGACACAGCCGTGTATTACTGTACTAGAGATCTCGCGGTTATATCCACAGTGGCTGGTACTAACTGGTTCGACCCCTGGGGCCAGGGAACCCTGGTCACCGTCTCCTCAGNN
 ```
