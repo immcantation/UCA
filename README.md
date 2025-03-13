@@ -68,7 +68,7 @@ pip install numpy pandas biopython olga
 
 ## Installing IgPhyML
 
- These new functions require the latest development version of IgPhyML, which is only supported on Linux and Mac OS X. We're working on other tree building methods, but for now this only works with IgPhyML. [Here are instructions that outline how to compile IgPhyML](https://igphyml.readthedocs.io/en/latest/install.html). **Please note**** that IgPhyML does not work with Windows. Once you've successfully installed IgPhyML you should find a executable file in the 'src' folder called 'igphyml'. You can test if you've done it correctly by running this line:
+ These new functions require the latest development version of IgPhyML, which is only supported on Linux and Mac OS X. We're working on other tree building methods, but for now this only works with IgPhyML. [Here are instructions that outline how to compile IgPhyML](https://igphyml.readthedocs.io/en/latest/install.html). Once you've successfully installed IgPhyML you should find a executable file in the 'src' folder called 'igphyml'. You can test if you've done it correctly by running this line:
 
 ```bash
 # run in terminal from within the igphyml directory:
