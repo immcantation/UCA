@@ -42,7 +42,9 @@ if (!requireNamespace("devtools", quietly = TRUE)) {
 library(devtools)
 
 # Install the developer version of dowser from GitHub
-install_github("immcantation/dowser")
+# We have tagged the version that is compatible.
+# Please be sure to use this version of dowser. 
+install_github("immcantation/dowser@2.3.1")
 ```
 
 ## Install the required python packages 
