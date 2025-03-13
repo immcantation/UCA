@@ -175,8 +175,8 @@ if __name__ == '__main__':
     parser.add_argument('--quiet', type=int, default=0, help='Whether to print out the progress/messages of the script')
     parser.add_argument("--starting_germlines", required=True, help="A comma seperated string of the file paths to the starting germline. "
     "If you have runn getTreesAndUCA this file will be named 'olga_testing_germline.txt'")
-    parser.add_argument("--starting_junctions", required=True, help="A comma seperated string of the file paths to the starting junction. "
-    "If you have runn getTreesAndUCA this file will be named 'olga_testing_germline_cdr3.txt'")
+    #parser.add_argument("--starting_junctions", required=True, help="A comma seperated string of the file paths to the starting junction. "
+    #"If you have runn getTreesAndUCA this file will be named 'olga_testing_germline_cdr3.txt'")
     parser.add_argument("--junction_locations", required=True, help="A comma seperated string of the file paths to the file containing the starting and endidn site number of the junction. "
     "If you have runn getTreesAndUCA this file will be named 'olga_junction_positions.txt'")
     parser.add_argument("--tree_tables", required=True, help="A comma seperated string of the file paths to the tree tables associated with these clones. "
@@ -212,7 +212,7 @@ if __name__ == '__main__':
     index_table = pd.DataFrame({
         'clone_ids': clone_ids_list,
         'starting_germline': starting_germlines_list,
-        'starting_junction': starting_junctions_list,
+        #'starting_junction': starting_junctions_list,
         'junction_locations': junction_locations_list,
         'tree_table': tree_table_list
     })
@@ -234,7 +234,7 @@ if __name__ == '__main__':
         igphyml_df['value'] = igphyml_df['partial_likelihood'] * igphyml_df['equilibrium']
 
         germline_string = row['starting_germline']
-        cdr3_string = row['starting_junction']
+        #cdr3_string = row['starting_junction']
         junction_string = row['junction_locations']
         starting_point, ending_point = read_starting_and_ending_points(junction_string)
 
@@ -242,8 +242,9 @@ if __name__ == '__main__':
         with open(germline_string, "r") as f:
             starting_germline = f.read().strip()
 
-        with open(cdr3_string, "r") as f:
-            starting_cdr3 = f.read().strip()
+        starting_cdr3 = starting_germline[starting_point:ending_point]
+        #with open(cdr3_string, "r") as f:
+        #    starting_cdr3 = f.read().strip()
 
         # junction_length = len(starting_cdr3)
 
