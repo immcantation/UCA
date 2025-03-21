@@ -75,8 +75,8 @@ pip install numpy pandas biopython olga
 
 ./src/igphyml -version
 
-#COMMAND: ./src/igphyml -version 
-#IgPhyML 2.1.0 031225
+# COMMAND: ./src/igphyml -version 
+# IgPhyML 2.1.0 031225
 ```
 
 ## Clone Olga's Github
