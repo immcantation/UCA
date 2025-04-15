@@ -41,7 +41,7 @@ def get_new_lhood(proposed_combination, starting_point, ending_point, pgen_model
     new_pgen = np.log(new_pgen)
     new_codons = [proposed_combination[i:i+3] for i in range(0, len(proposed_combination), 3)]
     parital_likelihoods = []
-    for i in range(0, igphyml_df['site'].max() + 1):
+    for i in range(0, igphyml_df['site'].max()):
         matched_value = igphyml_df.loc[(igphyml_df['site'] == i) & (igphyml_df['codon'] == new_codons[i]), 'partial_likelihood'].values[0]
         parital_likelihoods.append(matched_value)
     new_tree_likelihood = sum(parital_likelihoods)
@@ -117,47 +117,42 @@ def get_updated_germline(starting_germline, starting_cdr3, igphyml_df, pgen_mode
     return current_germline, current_lhoods, data
 
 if __name__ == '__main__':
+    # Initialize the argument parser
     parser = argparse.ArgumentParser(description='Process UCA arguments.')
-    parser.add_argument('--clone_ids', required=True, help='A comma seperated string of the clone iDs to get UCA for')
+    parser.add_argument('--clone_ids', required=True, help='A comma-separated string of the clone IDs to get UCA for')
     parser.add_argument('--directory', required=True, help='Directory where the clone data is stored')
     parser.add_argument('--max_iters', type=int, required=True, help='Max number of iterations to run')
     parser.add_argument('--nproc', type=int, required=True, help='Number of processors to use')
     parser.add_argument('--id', required=True, help='The name of the folder that is created to store the data')
-    parser.add_argument('--model_folder', required=True, help='The file path to the OLGA model files')
+    parser.add_argument('--model_folder', required=True, help='The file path to the OLGA model files for IGH')
+    parser.add_argument('--model_folder_igk', required=True, help='The file path to the OLGA model files for IGK')
+    parser.add_argument('--model_folder_igl', required=True, help='The file path to the OLGA model files for IGL')
     parser.add_argument('--quiet', type=int, default=0, help='Whether to print out the progress/messages of the script')
-    parser.add_argument("--starting_germlines", required=True, help="A comma seperated string of the file paths to the starting germline. "
-    "If you have runn getTreesAndUCA this file will be named 'olga_testing_germline.txt'")
-    parser.add_argument("--junction_locations", required=True, help="A comma seperated string of the file paths to the file containing the starting and endidn site number of the junction. "
-    "If you have runn getTreesAndUCA this file will be named 'olga_junction_positions.txt'")
-    parser.add_argument("--tree_tables", required=True, help="A comma seperated string of the file paths to the tree tables associated with these clones. "
-    "If you have runn getTreesAndUCA this file will end in '_pars_hlp_rootprobs.txt'")
-
+    parser.add_argument("--starting_germlines", required=True, help="A comma-separated string of the file paths to the starting germline. "
+                                                                    "If you have run getTreesAndUCA this file will be named 'olga_testing_germline.txt'")
+    parser.add_argument("--junction_locations", required=True, help="A comma-separated string of the file paths to the file containing the starting and ending site number of the junction. "
+                                                                    "If you have run getTreesAndUCA this file will be named 'olga_junction_positions.txt'")
+    parser.add_argument("--tree_tables", required=True, help="A comma-separated string of the file paths to the tree tables associated with these clones. "
+                                                            "If you have run getTreesAndUCA this file will end in '_pars_hlp_rootprobs.txt' or if running with both heavy and light chains it will be 'heavy_table.txt' "
+                                                            "'light_table.txt'")
+    parser.add_argument("--chains", required=True, help="A comma-separated string of the locus chains (IGH, IGK, or IGL) associated with these clones.")
     args = parser.parse_args()
 
     if args.quiet > 0:
         print("Arguments: ", args)
 
-    params_file_name = args.model_folder + '/model_params.txt'
-    marginals_file_name = args.model_folder + '/model_marginals.txt'
-    V_anchor_pos_file = args.model_folder + '/V_gene_CDR3_anchors.csv'
-    J_anchor_pos_file = args.model_folder + '/J_gene_CDR3_anchors.csv'
-
-    genomic_data = load_model.GenomicDataVDJ()
-    genomic_data.load_igor_genomic_data(params_file_name, V_anchor_pos_file, J_anchor_pos_file)
-    generative_model = load_model.GenerativeModelVDJ()
-    generative_model.load_and_process_igor_model(marginals_file_name)
-    pgen_model = pgen.GenerationProbabilityVDJ(generative_model, genomic_data)
-
     clone_ids_list = args.clone_ids.split(',')
     starting_germlines_list = args.starting_germlines.split(',')
     junction_locations_list = args.junction_locations.split(',')
     tree_table_list = args.tree_tables.split(',')
+    chains_list = args.chains.split(',')
 
     index_table = pd.DataFrame({
         'clone_ids': clone_ids_list,
         'starting_germline': starting_germlines_list,
         'junction_locations': junction_locations_list,
-        'tree_table': tree_table_list
+        'tree_table': tree_table_list,
+        'chains': chains_list
     })
 
     for index, row in index_table.iterrows():
@@ -168,6 +163,7 @@ if __name__ == '__main__':
         
         if not os.path.exists(base_string):
             os.makedirs(base_string)
+        chain = row['chains']
 
         table_path = row['tree_table']    
         igphyml_df = pd.read_csv(table_path, sep = "\t", header = None)
@@ -185,7 +181,7 @@ if __name__ == '__main__':
         j_gene = starting_germline[ending_point:len(starting_germline)]
         if "N" in v_gene or "N" in j_gene:
             if(args.quiet > 0):
-                print("N in V or J gene -- adding to igphyml df")
+                print("N in the J gene -- adding to igphyml df")
             codons = [starting_germline[i:i+3] for i in range(0, len(starting_germline), 3)]
             indices_with_N = [index for index, value in enumerate(codons) if 'N' in value and not (len(v_gene) // 3 + 1 <= index <= len(codons) - len(j_gene) // 3  - 1)]
             new_rows = []
@@ -210,6 +206,35 @@ if __name__ == '__main__':
         # split the germline into a list of codons
         codons = [starting_germline[i:i+3] for i in range(0, len(starting_germline), 3)]
 
+        if chain == "IGH":
+            model_folder = args.model_folder
+        elif chain == "IGK":
+            model_folder = args.model_folder_igk
+        elif chain == "IGL":
+            model_folder = args.model_folder_igl
+        else:
+            print("Invalid chain type. Please use IGH, IGK, or IGL.")
+            sys.exit(1)
+
+        params_file_name = model_folder + '/model_params.txt'
+        marginals_file_name = model_folder + '/model_marginals.txt'
+        V_anchor_pos_file = model_folder + '/V_gene_CDR3_anchors.csv'
+        J_anchor_pos_file = model_folder + '/J_gene_CDR3_anchors.csv'
+
+        if chain == "IGH":
+            genomic_data = load_model.GenomicDataVDJ()
+            genomic_data.load_igor_genomic_data(params_file_name, V_anchor_pos_file, J_anchor_pos_file)
+            generative_model = load_model.GenerativeModelVDJ()
+            generative_model.load_and_process_igor_model(marginals_file_name)
+            pgen_model = pgen.GenerationProbabilityVDJ(generative_model, genomic_data)
+        else:
+            genomic_data = load_model.GenomicDataVJ()
+            genomic_data.load_igor_genomic_data(params_file_name, V_anchor_pos_file, J_anchor_pos_file)
+            generative_model = load_model.GenerativeModelVJ()
+            generative_model.load_and_process_igor_model(marginals_file_name)
+            pgen_model = pgen.GenerationProbabilityVJ(generative_model, genomic_data)
+        
+
         # TODO: if the model (pgen) files aren't included and need to be read in, the argv calls here will need to be updated
         values = get_updated_germline(starting_germline, starting_cdr3, igphyml_df, pgen_model, starting_point, ending_point, cdr3_only=True, max_iter=int(args.max_iters), nproc = int(args.nproc))
 
@@ -218,10 +243,17 @@ if __name__ == '__main__':
         data = values[2]
 
         try:
-            with open(base_string + "/UCA.txt", "w") as f:
-                f.write(new_germline + "\n")
-            with open(base_string + "/UCA_lhoods.txt", "w") as f:
-                f.write(str(new_lhoods) + "\n")
-            data.to_csv(base_string + "/UCA_data.csv", index=False)
+            if chain == "IGH":
+                with open(base_string + "/UCA.txt", "w") as f:
+                    f.write(new_germline + "\n")
+                with open(base_string + "/UCA_lhoods.txt", "w") as f:
+                    f.write(str(new_lhoods) + "\n")
+                data.to_csv(base_string + "/UCA_data.csv", index=False)
+            else:
+                with open(base_string + "/UCA_light.txt", "w") as f:
+                    f.write(new_germline + "\n")
+                with open(base_string + "/UCA_lhoods_light.txt", "w") as f:
+                    f.write(str(new_lhoods) + "\n")
+                data.to_csv(base_string + "/UCA_data_light.csv", index=False)
         except Exception as e:
             print(f"Error writing output files: {e}")
