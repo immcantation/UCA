@@ -59,7 +59,14 @@ def process_option(option, filtered_df, codon, current_germline, starting_point,
     testing_germline[codon // 3] = testing_df['codon']
     testing_germline = ''.join(testing_germline)
     new_lhoods = get_new_lhood(testing_germline, starting_point, ending_point, pgen_model, igphyml_df_new)
-    return testing_germline, new_lhoods
+    temp_data = {
+    'site': codon//3,
+    'codon': testing_df['codon'],
+    'joint_log_likelihood': new_lhoods[2],
+    'tree_log_likelihood': new_lhoods[1],
+    'pgen_log_likelihood': new_lhoods[0],  
+    }
+    return testing_germline, new_lhoods, temp_data
 
 def process_option_wrapper(args):
     return process_option(*args)
@@ -84,11 +91,12 @@ def get_updated_germline(starting_germline, starting_cdr3, igphyml_df, pgen_mode
     tested_lhoods_combo = []
     tested_iterations = []
     iteration = 0
-
+    
     while still_improving and iteration < max_iter:
         still_improving = False
         codon_list = generate_codon_list(current_codons, current_germline, starting_point, ending_point, cdr3_only)
         iteration += 1
+        iteration_data = []
         for codon in codon_list:           
             filtered_df = igphyml_df_new[igphyml_df_new["site"] == codon/3]
             with Pool(nproc) as pool:
@@ -105,6 +113,19 @@ def get_updated_germline(starting_germline, starting_cdr3, igphyml_df, pgen_mode
                 current_lhoods = list(results_array[best_index])
                 current_germline = results[best_index][0]
                 still_improving = True
+            
+            # Collect temp_data for this iteration
+            for result in results:
+                temp_data = result[2]
+                iteration_data.append(temp_data)
+        
+        iteration_df = pd.DataFrame(iteration_data)
+        iteration_df = iteration_df.sort_values(by=['site', 'codon'], ascending=[True, True])
+        iteration_df['relative_likelihood'] = iteration_df.groupby('site')['joint_log_likelihood'].transform(
+            lambda x: np.exp(x - np.logaddexp.reduce(x))
+        )
+
+         
 
     data = {
     'germline': tested_combinations,
@@ -114,7 +135,7 @@ def get_updated_germline(starting_germline, starting_cdr3, igphyml_df, pgen_mode
     'iteration': tested_iterations,
     }
     data = pd.DataFrame(data)
-    return current_germline, current_lhoods, data
+    return current_germline, current_lhoods, data, iteration_df
 
 if __name__ == '__main__':
     # Initialize the argument parser
@@ -234,13 +255,12 @@ if __name__ == '__main__':
             generative_model.load_and_process_igor_model(marginals_file_name)
             pgen_model = pgen.GenerationProbabilityVJ(generative_model, genomic_data)
         
-
-        # TODO: if the model (pgen) files aren't included and need to be read in, the argv calls here will need to be updated
         values = get_updated_germline(starting_germline, starting_cdr3, igphyml_df, pgen_model, starting_point, ending_point, cdr3_only=True, max_iter=int(args.max_iters), nproc = int(args.nproc))
 
         new_germline = values[0]
         new_lhoods = values[1]
         data = values[2]
+        iteration_df = values[3]
 
         try:
             if chain == "IGH":
@@ -249,11 +269,13 @@ if __name__ == '__main__':
                 with open(base_string + "/UCA_lhoods.txt", "w") as f:
                     f.write(str(new_lhoods) + "\n")
                 data.to_csv(base_string + "/UCA_data.csv", index=False)
+                iteration_df.to_csv(base_string + "/recombination_stats.csv", index=False) 
             else:
                 with open(base_string + "/UCA_light.txt", "w") as f:
                     f.write(new_germline + "\n")
                 with open(base_string + "/UCA_lhoods_light.txt", "w") as f:
                     f.write(str(new_lhoods) + "\n")
                 data.to_csv(base_string + "/UCA_data_light.csv", index=False)
+                iteration_df.to_csv(base_string + "/recombination_stats_light.csv", index=False)
         except Exception as e:
             print(f"Error writing output files: {e}")
