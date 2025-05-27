@@ -2,7 +2,7 @@
 
 :construction: This readme is still under construction and is meant for *beta testers*. :construction:
 
-This is a script that will infer the naive sequence of a B cell clone. This process is jointly inferred using phylogenetic based statistics and the likelihood of a given B cell receptor (BCR) junction. 
+This is a script that will infer the naive sequence of a B cell clone. This process is jointly inferred using phylogenetic based statistics and the likelihood of a given B cell receptor (BCR) junction.
 
 ## Install the dependant R packages
 If you have not installed Dowser yet, you will be installing the developer version to test this pipeline. Dowser requires some bioconductor packages and some CRAN packages. As such, it tends to be easier to install the bioconductor packages before installing Dowser.
@@ -43,11 +43,11 @@ library(devtools)
 
 # Install the developer version of dowser from GitHub
 # We have tagged the version that is compatible.
-# Please be sure to use this version of dowser. 
+# Please be sure to use this version of dowser.
 install_github("immcantation/dowser@2.3.1")
 ```
 
-## Install the required python packages 
+## Install the required python packages
 
 The following Python packages are required to run the script:
 
@@ -65,6 +65,16 @@ To install the required packages, you can use the following commands:
 
 pip install numpy pandas biopython olga
 ```
+It is worth noting that sometimes the Python version you install these packages to is not the same as what R will call. Please double check the Python executable. If you are using a virtual environment it is possible that you have installed the packages to Python, pointed to the right executable and still end up with an error due to the Python package not being installed. To check if the packages are installed and R can use them you can run:
+
+```r
+system2("python", args = c("-m", "pip", "list")) # or whatever your python verion/executable is
+```
+If they are not installed please run:
+
+```r
+system2("python3", args = c("-m", "pip", "install", "missing package name", "missing package name 2"))
+```
 
 ## Installing IgPhyML
 
@@ -75,13 +85,13 @@ pip install numpy pandas biopython olga
 
 ./src/igphyml -version
 
-# COMMAND: ./src/igphyml -version 
+# COMMAND: ./src/igphyml -version
 # IgPhyML 2.1.0 031225
 ```
 
 ## Clone Olga's Github
 
-We use the program `OLGA` for likelihood calculations. Please clone their github (you will need this later). 
+We use the program `OLGA` for likelihood calculations. Please clone their github (you will need this later).
 
 ```bash
 git clone https://github.com/statbiophys/OLGA.git
@@ -89,7 +99,7 @@ git clone https://github.com/statbiophys/OLGA.git
 
 ## Preparing your data
 
-Follow the usual steps of processing your BCR data up to the [formatClones](https://dowser.readthedocs.io/en/latest/vignettes/Building-Trees-Vignette/) step of building B cell phylogenies. 
+Follow the usual steps of processing your BCR data up to the [formatClones](https://dowser.readthedocs.io/en/latest/vignettes/Building-Trees-Vignette/) step of building B cell phylogenies.
 ```r
 # Run this and subsequent  code blocks in an R terminal
 
@@ -111,10 +121,10 @@ clones_UCA <- getTreesAndUCAs(clones = clones, build = "igphyml",
                                nproc = 1)
 ```
 
-The output of this function is your clones object with a new column `UCA` that contains the inferred UCA. This can be found in the data frame containing sequence information for each clone, or in the germline node of the tree. 
+The output of this function is your clones object with a new column `UCA` that contains the inferred UCA. This can be found in the data frame containing sequence information for each clone, or in the germline node of the tree.
 
 ```r
-# Get the UCA of the first clone from the new UCA column in the data object 
+# Get the UCA of the first clone from the new UCA column in the data object
 clones_UCA$UCA[1]
 # GAGGTGCAGCTGGTGGAGTCTGGGGGAGGCTTGGTACAGCCAGGGCGGTCCCTGAGACTCTCCTGTACAGCTTCTGGATTCACCTTTGGTGATTATGCTATGAGCTGGTTCCGCCAGGCTCCAGGGAAGGGGCTGGAGTGGGTAGGTTTCATTAGAAGCAAAGCTTATGGTGGGACAACAGAATACGCCGCGTCTGTGAAAGGCAGATTCACCATCTCAAGAGATGATTCCAAAAGCATCGCCTATCTGCAAATGAACAGCCTGAAAACCGAGGACACAGCCGTGTATTACTGTACTAGAGATCTCGCGGTTATATCCACAGTGGCTGGTACTAACTGGTTCGACCCCTGGGGCCAGGGAACCCTGGTCACCGTCTCCTCAGNN
 
