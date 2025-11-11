@@ -80,7 +80,7 @@ system2("python3", args = c("-m", "pip", "install", "missing package name", "mis
 
  These new functions require the latest development version of IgPhyML, which is only supported on Linux and Mac OS. We're working on other tree building methods, but for now this only works with IgPhyML. [Here are instructions that outline how to compile IgPhyML](https://igphyml.readthedocs.io/en/latest/install.html). Once you've successfully installed IgPhyML you should find a executable file in the 'src' folder called 'igphyml'. You can test if you've done it correctly by running this line:
 
- **The newest version of IgPhyML was released in October of 2025. Please make sure you are using that version**
+ :exclamation::exclamation::exclamation:**The newest version of IgPhyML was released in October of 2025. Please make sure you are using that version**:exclamation::exclamation::exclamation:
 
 ```bash
 # run in terminal from within the igphyml directory:
