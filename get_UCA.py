@@ -1,6 +1,7 @@
 import argparse
 import sys
 from Bio.Seq import Seq
+import json
 import logomaker
 import matplotlib.pyplot as plt
 from multiprocessing import Pool
@@ -17,10 +18,14 @@ def read_starting_and_ending_points(file_path):
         starting_point, ending_point = map(int, content.split())
     return starting_point, ending_point
 
-def generate_codon_list(codons, starting_germline, starting_point, end_point, cdr3_only):
+def generate_codon_list(codons, starting_germline, starting_point, ending_point, cdr3_only, tree_df):
     if cdr3_only:
-        codons_cdr3 = [(i, starting_germline[i:i+3]) for i in range(starting_point, end_point, 3)]
+        codons_cdr3 = [(i, starting_germline[i:i+3]) for i in range(starting_point, ending_point, 3)]
         positions = [pos for pos, _ in codons_cdr3]
+        positions = [
+            pos for pos in positions
+            if len(tree_df[tree_df['site'] == pos / 3]) > 1
+        ]
         new_order = random.sample(positions, len(positions))
     else:
         new_order = random.sample(range(len(codons)), len(codons))
@@ -124,7 +129,7 @@ def get_updated_germline(starting_germline, starting_cdr3, igphyml_df, pgen_mode
     
     while still_improving and iteration < max_iter:
         still_improving = False
-        codon_list = generate_codon_list(current_codons, current_germline, starting_point, ending_point, cdr3_only)
+        codon_list = generate_codon_list(current_codons, current_germline, starting_point, ending_point, cdr3_only, igphyml_df_new)
         iteration += 1
         iteration_data = []
         for codon in codon_list:           
@@ -187,6 +192,18 @@ def get_updated_germline_nt(starting_germline, starting_cdr3, igphyml_df, pgen_m
     tested_lhoods_combo = []
     tested_iterations = []
     iteration = 0
+    junction_sites = list(range(starting_point + 1, ending_point + 1))
+    junction_site_groups = [junction_sites[i:i+3] for i in range(0, len(junction_sites), 3)]
+    positions = [max(group) // 3 - 1 for group in junction_site_groups]
+    positions = [
+        pos for pos in positions
+        if len(igphyml_df_new[igphyml_df_new['site'] == pos]) > 1
+    ]
+    positions = [
+        group for group in junction_site_groups
+        if (max(group) // 3 - 1) in positions
+    ]
+    junction_sites = [site for group in positions for site in group]
 
     while still_improving and iteration < max_iter:
         still_improving = False
@@ -194,7 +211,6 @@ def get_updated_germline_nt(starting_germline, starting_cdr3, igphyml_df, pgen_m
         codon_numbers = [list(range(i, min(i+3, len(current_germline)+1))) for i in range(1, len(current_germline)+1, 3)]
         iteration += 1
         iteration_data = []
-        junction_sites = list(range(starting_point + 1, ending_point + 1))
         random_junction_sites = random.sample(junction_sites, len(junction_sites))
         
         for i in random_junction_sites:
@@ -264,7 +280,7 @@ def process_row(row):
 
     table_path = row['tree_table']    
     igphyml_df = pd.read_csv(table_path, sep = "\t", header = None)
-    igphyml_df.columns = ["site", "codon", "partial_likelihood", "nope", "nada", "no", "equilibrium"]
+    igphyml_df.columns = ["site", "codon", "partial_likelihood", "log_likelihood_site", "upper_partial_log_likelihood", "upper_partial_likelihood", "equilibrium"]
     igphyml_df['value'] = igphyml_df['partial_likelihood'] + np.log(igphyml_df['equilibrium'])
     germline_string = row['starting_germline']
     junction_string = row['junction_locations']
@@ -406,36 +422,22 @@ def process_row(row):
 if __name__ == '__main__':
     # Initialize the argument parser
     parser = argparse.ArgumentParser(description='Process UCA arguments.')
-    parser.add_argument('--clone_ids', required=True, help='A comma-separated string of the clone IDs to get UCA for')
-    parser.add_argument('--directory', required=True, help='Directory where the clone data is stored')
-    parser.add_argument('--max_iters', type=int, required=True, help='Max number of iterations to run')
-    parser.add_argument('--nproc', type=int, required=True, help='Number of processors to use')
-    parser.add_argument('--id', required=True, help='The name of the folder that is created to store the data')
-    parser.add_argument('--model_folder', required=True, help='The file path to the OLGA model files for IGH')
-    parser.add_argument('--model_folder_igk', required=True, help='The file path to the OLGA model files for IGK')
-    parser.add_argument('--model_folder_igl', required=True, help='The file path to the OLGA model files for IGL')
-    parser.add_argument('--quiet', type=int, default=0, help='Whether to print out the progress/messages of the script')
-    parser.add_argument("--starting_germlines", required=True, help="A comma-separated string of the file paths to the starting germline. "
-                                                                    "If you have run getTreesAndUCA this file will be named 'olga_testing_germline.txt'")
-    parser.add_argument("--junction_locations", required=True, help="A comma-separated string of the file paths to the file containing the starting and ending site number of the junction. "
-                                                                    "If you have run getTreesAndUCA this file will be named 'olga_junction_positions.txt'")
-    parser.add_argument("--tree_tables", required=True, help="A comma-separated string of the file paths to the tree tables associated with these clones. "
-                                                            "If you have run getTreesAndUCA this file will end in '_pars_hlp_rootprobs.txt' or if running with both heavy and light chains it will be 'heavy_table.txt' "
-                                                            "'light_table.txt'")
-    parser.add_argument("--chains", required=True, help="A comma-separated string of the locus chains (IGH, IGK, or IGL) associated with these clones.")
-    parser.add_argument("--search", required=True, help="The search method used to determine the UCA. This should be 'codon' or 'nt'.")
+    parser.add_argument('--args_json', required=True, help='Path to JSON file with all arguments')
     args = parser.parse_args()
 
-    if args.quiet > 0:
-        print("Arguments: ", args)
+    with open(args.args_json) as f:
+        params = json.load(f)
 
-    clone_ids_list = args.clone_ids.split(',')
-    starting_germlines_list = args.starting_germlines.split(',')
-    junction_locations_list = args.junction_locations.split(',')
-    tree_table_list = args.tree_tables.split(',')
-    chains_list = args.chains.split(',')
+    if int(params.get("quiet", 0)) > 0:
+        print("Arguments: ", params)
 
-    if args.search == "codon":
+    clone_ids_list = params.get("clone_ids", "").split(',')
+    starting_germlines_list = params.get("starting_germlines", "").split(',')
+    junction_locations_list = params.get("junction_locations", "").split(',')
+    tree_table_list = params.get("tree_tables", "").split(',')
+    chains_list = params.get("chains", "").split(',')
+
+    if params.get("search", "") == "codon":
         index_table = pd.DataFrame({
             'clone_ids': clone_ids_list,
             'starting_germline': starting_germlines_list,
@@ -445,8 +447,8 @@ if __name__ == '__main__':
         })
         for index, row in index_table.iterrows():
             clone_number = row['clone_ids']
-            base_string = args.directory + "/" + args.id + "_" + clone_number
-            if args.quiet > 0:
+            base_string = params.get("directory", "") + "/" + params.get("id", "") + "_" + clone_number
+            if int(params.get("quiet", 0)) > 0:
                 print("\nRunning on clone", clone_number, "with locus", row['chains'], "saved at", base_string)
             
             if not os.path.exists(base_string):
@@ -467,7 +469,7 @@ if __name__ == '__main__':
             v_gene = starting_germline[0:starting_point]
             j_gene = starting_germline[ending_point:len(starting_germline)]
             if "N" in v_gene or "N" in j_gene:
-                if(args.quiet > 0):
+                if int(params.get("quiet", 0)) > 0:
                     print("N in the J gene -- adding to igphyml df")
                 codons = [starting_germline[i:i+3] for i in range(0, len(starting_germline), 3)]
                 indices_with_N = [index for index, value in enumerate(codons) if 'N' in value and not (len(v_gene) // 3 + 1 <= index <= len(codons) - len(j_gene) // 3  - 1)]
@@ -486,7 +488,7 @@ if __name__ == '__main__':
             #igphyml_df['value'] = igphyml_df['partial_likelihood'] + np.log(igphyml_df['equilibrium'])
             
             if "N" in starting_cdr3:
-                if(args.quiet > 0):
+                if int(params.get("quiet", 0)) > 0:
                     print("N in starting CDR3 -- replacing with C")
                 starting_cdr3 = starting_cdr3.replace("N", "C")
                 # replace the Ns in the cdr3 with C and stitch it back together
@@ -496,11 +498,11 @@ if __name__ == '__main__':
             codons = [starting_germline[i:i+3] for i in range(0, len(starting_germline), 3)]
 
             if chain == "IGH":
-                model_folder = args.model_folder
+                model_folder = params.get("model_folder", "")
             elif chain == "IGK":
-                model_folder = args.model_folder_igk
+                model_folder = params.get("model_folder_igk", "")
             elif chain == "IGL":
-                model_folder = args.model_folder_igl
+                model_folder = params.get("model_folder_igl", "")
             else:
                 print("Invalid chain type. Please use IGH, IGK, or IGL.")
                 sys.exit(1)
@@ -522,8 +524,8 @@ if __name__ == '__main__':
                 generative_model = load_model.GenerativeModelVJ()
                 generative_model.load_and_process_igor_model(marginals_file_name)
                 pgen_model = pgen.GenerationProbabilityVJ(generative_model, genomic_data)
-            
-            values = get_updated_germline(starting_germline, starting_cdr3, igphyml_df, pgen_model, starting_point, ending_point, cdr3_only=True, max_iter=int(args.max_iters), nproc = int(args.nproc))
+
+            values = get_updated_germline(starting_germline, starting_cdr3, igphyml_df, pgen_model, starting_point, ending_point, cdr3_only=True, max_iter=int(params.get("max_iters", 100)), nproc=int(params.get("nproc", 1)))
 
             new_germline = values[0]
             new_lhoods = values[1]
@@ -568,22 +570,22 @@ if __name__ == '__main__':
                     plt.close('all')
             except Exception as e:
                 print(f"Error writing output files: {e}")
-    elif args.search == "nt":
+    elif params.get("search", "") == "nt":
         index_table = pd.DataFrame({
             'clone_ids': clone_ids_list,
             'starting_germline': starting_germlines_list,
             'junction_locations': junction_locations_list,
             'tree_table': tree_table_list,
             'chains': chains_list,
-            'directory': args.directory, 
-            'id': args.id,
-            'max_iters': args.max_iters,
-            'quiet': args.quiet,
-            'model_folder': args.model_folder,
-            'model_folder_igk': args.model_folder_igk,
-            'model_folder_igl': args.model_folder_igl
+            'directory': params.get("directory", ""),
+            'id': params.get("id", ""),
+            'max_iters': params.get("max_iters", 100),
+            'quiet': int(params.get("quiet", 0)),
+            'model_folder': params.get("model_folder", ""),
+            'model_folder_igk': params.get("model_folder_igk", ""),
+            'model_folder_igl': params.get("model_folder_igl", "")
         })
 
         rows = [row.to_dict() for _, row in index_table.iterrows()]
-        with Pool(processes=int(args.nproc)) as pool:
+        with Pool(processes=int(params.get("nproc", 1))) as pool:
             pool.map(process_row, rows)

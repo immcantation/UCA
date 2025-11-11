@@ -44,26 +44,26 @@ library(devtools)
 # Install the developer version of dowser from GitHub
 # We have tagged the version that is compatible.
 # Please be sure to use this version of dowser.
-install_github("immcantation/dowser@2.3.1")
+install_github("immcantation/dowser@c48c198")
 ```
 
 ## Install the required python packages
 
 The following Python packages are required to run the script:
 
-- numpy
-- pandas
 - Bio (from Biopython)
-- multiprocessing
-- random
+- logomaker
+- matplotlib.pyplot
+- numpy
 - olga
+- pandas
 
 To install the required packages, you can use the following commands:
 
 ```bash
 # run this code in a command terminal, not an R terminal
 
-pip install numpy pandas biopython olga
+pip install biopython logomaker matplotlib numpy olga pandas
 ```
 It is worth noting that sometimes the Python version you install these packages to is not the same as what R will call. Please double check the Python executable. If you are using a virtual environment it is possible that you have installed the packages to Python, pointed to the right executable and still end up with an error due to the Python package not being installed. To check if the packages are installed and R can use them you can run:
 
@@ -79,6 +79,8 @@ system2("python3", args = c("-m", "pip", "install", "missing package name", "mis
 ## Installing IgPhyML
 
  These new functions require the latest development version of IgPhyML, which is only supported on Linux and Mac OS. We're working on other tree building methods, but for now this only works with IgPhyML. [Here are instructions that outline how to compile IgPhyML](https://igphyml.readthedocs.io/en/latest/install.html). Once you've successfully installed IgPhyML you should find a executable file in the 'src' folder called 'igphyml'. You can test if you've done it correctly by running this line:
+
+ **The newest version of IgPhyML was released in October of 2025. Please make sure you are using that version**
 
 ```bash
 # run in terminal from within the igphyml directory:
@@ -108,16 +110,17 @@ library(dplyr)
 data("ExampleAirr")
 ExampleAirr <- filter(ExampleAirr, clone_id %in% c(3128, 3100))
 clones <- formatClones(ExampleAirr)
+references <- readIMGT("imgt/human/vdj")
 ```
 ## Inferring the UCA
 
 You should now have a clone object with 2 clones. To do reconstruct the trees and UCAs, use the `getTreesAndUCAs` function in R. The inputs of this function are 1) the clones object, 2) location of the IgPhyML executible, 3) the script get_UCA.py included with this repository, and 4) the location of Olga's model parameters. Note these models are species and chain specific. We've only tested this on human heavy chains so far. For further detail into the function inputs and parameters, run `?getTreesAndUCAs`.  This function may take a few minutes to complete, but you can speed it up by only including a few clones or increasing the `nproc` to the number of cores you'd like to use (should get faster up to 61 cores).
 
 ```r
-clones_UCA <- getTreesAndUCAs(clones = clones, build = "igphyml",
+clones_UCA <- getTreesAndUCAs(clones = clones, data = ExampleAirr,
+                               references = references,
                                exec = "igphyml/src/igphyml",
                                model_folder = "OLGA/olga/default_models/human_B_heavy",
-                               uca_script = "get_UCA.py",
                                nproc = 1)
 ```
 
@@ -128,11 +131,7 @@ The output of this function is your clones object with a new column `UCA` that c
 clones_UCA$UCA[1]
 # GAGGTGCAGCTGGTGGAGTCTGGGGGAGGCTTGGTACAGCCAGGGCGGTCCCTGAGACTCTCCTGTACAGCTTCTGGATTCACCTTTGGTGATTATGCTATGAGCTGGTTCCGCCAGGCTCCAGGGAAGGGGCTGGAGTGGGTAGGTTTCATTAGAAGCAAAGCTTATGGTGGGACAACAGAATACGCCGCGTCTGTGAAAGGCAGATTCACCATCTCAAGAGATGATTCCAAAAGCATCGCCTATCTGCAAATGAACAGCCTGAAAACCGAGGACACAGCCGTGTATTACTGTACTAGAGATCTCGCGGTTATATCCACAGTGGCTGGTACTAACTGGTTCGACCCCTGGGGCCAGGGAACCCTGGTCACCGTCTCCTCAGNN
 
-# Aternatively, use the usual workflow for reconstructing intermediate sequences to get the IMGT-gapped UCA sequence.
-# https://dowser.readthedocs.io/en/latest/vignettes/Sequences-Vignette/
-plotTrees(clones_UCA, node_nums=TRUE)[[1]]
-germline_node <- ape::getMRCA(clones_UCA$trees[[1]], clones_UCA$trees[[1]]$tip.label)
-
-getNodeSeq(clones_UCA, tree=clones_UCA$trees[[1]], node=germline_node)
+# Aternatively, if you want the IMGT gapped UCA sequence
+clones_UCA$UCA_IMGT[1]
 # GAGGTGCAGCTGGTGGAGTCTGGGGGA...GGCTTGGTACAGCCAGGGCGGTCCCTGAGACTCTCCTGTACAGCTTCTGGATTCACCTTT............GGTGATTATGCTATGAGCTGGTTCCGCCAGGCTCCAGGGAAGGGGCTGGAGTGGGTAGGTTTCATTAGAAGCAAAGCTTATGGTGGGACAACAGAATACGCCGCGTCTGTGAAA...GGCAGATTCACCATCTCAAGAGATGATTCCAAAAGCATCGCCTATCTGCAAATGAACAGCCTGAAAACCGAGGACACAGCCGTGTATTACTGTACTAGAGATCTCGCGGTTATATCCACAGTGGCTGGTACTAACTGGTTCGACCCCTGGGGCCAGGGAACCCTGGTCACCGTCTCCTCAGNN
 ```
