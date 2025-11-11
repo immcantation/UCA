@@ -137,7 +137,7 @@ clones_UCA$UCA_IMGT[1]
 # GAGGTGCAGCTGGTGGAGTCTGGGGGA...GGCTTGGTACAGCCAGGGCGGTCCCTGAGACTCTCCTGTACAGCTTCTGGATTCACCTTT............GGTGATTATGCTATGAGCTGGTTCCGCCAGGCTCCAGGGAAGGGGCTGGAGTGGGTAGGTTTCATTAGAAGCAAAGCTTATGGTGGGACAACAGAATACGCCGCGTCTGTGAAA...GGCAGATTCACCATCTCAAGAGATGATTCCAAAAGCATCGCCTATCTGCAAATGAACAGCCTGAAAACCGAGGACACAGCCGTGTATTACTGTACTAGAGATCTCGCGGTTATATCCACAGTGGCTGGTACTAACTGGTTCGACCCCTGGGGCCAGGGAACCCTGGTCACCGTCTCCTCAGNN
 ```
 
-If you want to do paired data, you will need to make a few adjustments
+If you want to do paired data, you will need to make a [few adjustments](https://dowser.readthedocs.io/en/latest/vignettes/Resolve-Light-Chains-Vignette/)
 ```r
 data("ExampleMixedDb")
 ExampleMixedDb <- resolveLightChains(ExampleMixedDb)
@@ -154,4 +154,4 @@ clones_UCA <- getTreesAndUCAs(clones = clones, data = ExampleAirr,
                                model_folder_igl = "OLGA/olga/default_models/human_B_lambda",
                                nproc = 1, chain = "HL", partition = "hl")
 ```
-The column outputs will be the same but will have include UCA information for both chains where applicable. 
+The column outputs will be the same but will have include UCA information for both chains where applicable.
