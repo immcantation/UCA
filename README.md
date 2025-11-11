@@ -109,8 +109,9 @@ library(dowser)
 library(dplyr)
 data("ExampleAirr")
 ExampleAirr <- filter(ExampleAirr, clone_id %in% c(3128, 3100))
-clones <- formatClones(ExampleAirr)
 references <- readIMGT("imgt/human/vdj")
+ExampleAirr <- createGermlines(ExampleAirr, references = references, nproc = 1)
+clones <- formatClones(ExampleAirr, nproc = 1)
 ```
 ## Inferring the UCA
 
@@ -135,3 +136,22 @@ clones_UCA$UCA[1]
 clones_UCA$UCA_IMGT[1]
 # GAGGTGCAGCTGGTGGAGTCTGGGGGA...GGCTTGGTACAGCCAGGGCGGTCCCTGAGACTCTCCTGTACAGCTTCTGGATTCACCTTT............GGTGATTATGCTATGAGCTGGTTCCGCCAGGCTCCAGGGAAGGGGCTGGAGTGGGTAGGTTTCATTAGAAGCAAAGCTTATGGTGGGACAACAGAATACGCCGCGTCTGTGAAA...GGCAGATTCACCATCTCAAGAGATGATTCCAAAAGCATCGCCTATCTGCAAATGAACAGCCTGAAAACCGAGGACACAGCCGTGTATTACTGTACTAGAGATCTCGCGGTTATATCCACAGTGGCTGGTACTAACTGGTTCGACCCCTGGGGCCAGGGAACCCTGGTCACCGTCTCCTCAGNN
 ```
+
+If you want to do paired data, you will need to make a few adjustments
+```r
+data("ExampleMixedDb")
+ExampleMixedDb <- resolveLightChains(ExampleMixedDb)
+ExampleMixedDb <- createGermlines(ExampleMixedDb, references = references, nproc = 1)
+clones <- formatClones(ExampleMixedDb, chain = "HL", nproc = 1)
+
+# this will tell the process to reconstruct the UCA for both the heavy and light chains
+# and use the partitioned model to construct the trees
+clones_UCA <- getTreesAndUCAs(clones = clones, data = ExampleAirr,
+                               references = references,
+                               exec = "igphyml/src/igphyml",
+                               model_folder = "OLGA/olga/default_models/human_B_heavy",
+                               model_folder_igk = "OLGA/olga/default_models/human_B_kappa",
+                               model_folder_igl = "OLGA/olga/default_models/human_B_lambda",
+                               nproc = 1, chain = "HL", partition = "hl")
+```
+The column outputs will be the same but will have include UCA information for both chains where applicable. 
